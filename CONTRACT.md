@@ -50,7 +50,7 @@ sustainability_cache
 
 - `POST /api/profile/photo` — body `{ image: dataUrl }` -> runs one-time color palette analysis, upserts users_profile, returns it.
 - `GET /api/profile` -> returns users_profile (or `{}` if not yet analyzed).
-- `POST /api/wardrobe/tryon` — body `{ garmentImage, garmentDescription, category, sourceUrl, sourceName, sourcePrice }` -> runs try-on (reuse existing /api/tryon logic, don't duplicate), saves images to server/uploads/, inserts a wardrobe_items row, returns the created item.
+- `POST /api/wardrobe/tryon` — body `{ personImage, garmentImage, garmentDescription, category, sourceUrl, sourceName, sourcePrice }` (personImage + garmentImage are base64 data URLs, both required -> 400 if missing) -> runs try-on (reuse existing /api/tryon logic, don't duplicate), downloads the ephemeral HF output + saves both images to server/uploads/, inserts a wardrobe_items row, returns the created item as **201 Created** (clients: check `response.ok`, not `status === 200`). Image fields come back as `/uploads/<file>` web paths.
 - `POST /api/wardrobe/:id/analyze-color` -> pulls stored images for that item, extracts dominant colors, compares against cached users_profile.colorPalette (do NOT recompute the palette here), writes colorMatchScore + colorMatchNotes onto the item, returns it.
 - `POST /api/wardrobe/:id/sustainability` -> looks up item.sourceName in sustainability_cache first; on miss, does a grounded (web-search-backed) lookup, writes to cache + onto the item, returns it. Must explicitly avoid inventing unsourced claims — fall back to a labeled generic per-category estimate if nothing is found.
 - `GET /api/wardrobe` -> list all wardrobe_items, newest first.
