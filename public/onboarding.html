@@ -4,58 +4,52 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>déjà wear — your colors</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
-  <style>
-    .swatch-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
-    .swatch {
-      width: 48px; height: 48px; border-radius: 8px;
-      border: 1px solid rgba(0, 0, 0, 0.15);
-      display: flex; align-items: flex-end; justify-content: center;
-    }
-    .swatch span {
-      font-size: 0.6rem; background: rgba(255, 255, 255, 0.85); color: #111;
-      padding: 1px 3px; border-radius: 4px; margin-bottom: -4px;
-    }
-    .palette-card {
-      border: 1px solid #ddd; border-radius: 12px; padding: 1.25rem;
-      margin-top: 1.5rem; text-align: left;
-    }
-    .palette-card h2 { margin-top: 0; text-transform: capitalize; }
-    .palette-meta { color: #666; margin-bottom: 1rem; }
-    .back-link { display: block; text-align: center; margin-top: 2rem; color: var(--accent); }
-  </style>
 </head>
 <body>
-  <header>
-    <h1>déjà wear</h1>
-    <p class="tagline">find your colors, once</p>
-  </header>
+  <nav class="nav">
+    <a class="nav-logo" href="/">déjà wear</a>
+    <div class="nav-links">
+      <a href="/onboarding.html">Find your colors</a>
+    </div>
+  </nav>
 
-  <main>
-    <section class="upload-box" style="max-width: 480px; margin: 0 auto;">
-      <label for="personPhoto">Full-body photo of you (good lighting, no filters)</label>
-      <input type="file" id="personPhoto" accept="image/*" />
-      <img id="personPreview" class="preview" hidden />
-      <button id="analyzeBtn" style="margin-top: 1rem; width: 100%;">Analyze my colors</button>
+  <main class="app onboarding">
+    <header class="hero">
+      <p class="eyebrow">Find your colors, once</p>
+      <h1 class="hero-title">Your seasonal palette.</h1>
+      <p class="hero-sub">Upload one full-body photo in good light. We analyze your undertone
+        and coloring a single time, then reuse it to score every item you try on.</p>
+    </header>
+
+    <section class="panel upload-panel">
+      <div class="upload-box">
+        <label for="personPhoto">Full-body photo of you (good lighting, no filters)</label>
+        <input type="file" id="personPhoto" accept="image/*" />
+        <img id="personPreview" class="preview" hidden />
+      </div>
+      <button id="analyzeBtn" class="btn-primary" style="width:100%; margin-top:16px;">Analyze my colors</button>
+      <p id="status" class="status" hidden></p>
     </section>
 
-    <p id="status" class="status" hidden></p>
-
-    <section id="paletteCard" class="palette-card" hidden>
+    <section id="paletteCard" class="panel palette-card" hidden>
       <h2 id="paletteSeason"></h2>
       <p class="palette-meta" id="paletteUndertone"></p>
 
-      <strong>Best colors</strong>
+      <strong class="palette-label">Best colors</strong>
       <div class="swatch-row" id="bestColors"></div>
 
-      <strong style="display: block; margin-top: 1rem;">Colors to avoid</strong>
+      <strong class="palette-label">Colors to avoid</strong>
       <div class="swatch-row" id="avoidColors"></div>
 
-      <p class="palette-meta" id="analyzedAt" style="margin-top: 1rem;"></p>
-      <a id="continueLink" class="back-link" href="/" style="margin-top: 0.5rem; font-weight: 600;" hidden>Continue &rarr;</a>
+      <p class="palette-meta" id="analyzedAt"></p>
+      <a id="continueLink" class="btn-primary continue-link" href="/" hidden>Continue →</a>
     </section>
 
-    <a class="back-link" href="/">&larr; Back to déjà wear</a>
+    <a class="back-link" href="/">← Back to déjà wear</a>
   </main>
 
   <script src="onboarding.js"></script>

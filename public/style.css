@@ -1,218 +1,704 @@
+/* ==========================================================================
+   déjà wear — design tokens
+   ========================================================================== */
 :root {
-  color-scheme: light dark;
-  --accent: #5b8def;
-  --bg: #fafafa;
-  --text: #1a1a1a;
+  --cream-bg: #F4EFE4;
+  --cream-panel: #FBF8F1;
+  --cream-raised: #FFFFFF;
+  --cream-sunk: #EFE9DB;
+  --ink: #1C1B17;
+  --ink-soft: #6E6656;
+  --ink-faint: #9A9284;
+  --pine: #1E3A2B;
+  --pine-hover: #27503A;
+  --pine-deep: #12261C;
+  --gold: #A9834C;
+  --gold-soft: #C9B48E;
+  --line: #E7DFCF;
+  --amber-bg: #FBF1DD;
+  --amber-ink: #8A5A00;
+  --amber-line: #EAD3A0;
+  --info-bg: #EAF0EA;
+  --info-ink: #2C4A38;
+  --radius: 14px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(28,27,23,.04), 0 1px 3px rgba(28,27,23,.06);
+  --shadow-md: 0 6px 22px rgba(28,27,23,.07), 0 2px 6px rgba(28,27,23,.05);
+  --shadow-lg: 0 18px 50px rgba(28,27,23,.12);
+  --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --maxw: 1000px;
 }
 
+/* ==========================================================================
+   Global / base
+   ========================================================================== */
 * { box-sizing: border-box; }
 
+[hidden] { display: none !important; }
+
 body {
-  font-family: system-ui, -apple-system, sans-serif;
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 2rem 1.25rem 4rem;
-  background: var(--bg);
-  color: var(--text);
+  font-family: var(--font-sans);
+  background: var(--cream-bg);
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
 }
 
-header { text-align: center; margin-bottom: 2rem; }
-h1 { margin-bottom: 0.25rem; }
-.tagline { color: #666; margin-top: 0; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -.01em;
+  color: var(--ink);
+}
 
-.counter {
+.eyebrow {
+  display: block;
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: .22em;
+  font-size: .7rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.app, main {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 24px 96px;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+button {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: .75rem 1.4rem;
+  font-size: .95rem;
+  transition: all .18s ease;
+}
+
+.btn-primary,
+#tryOnBtn,
+#analyzeBtn,
+.skip,
+.wardrobe-skip {
+  background: var(--pine);
+  color: var(--cream-panel);
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover,
+#tryOnBtn:hover,
+#analyzeBtn:hover,
+.skip:hover,
+.wardrobe-skip:hover {
+  background: var(--pine-hover);
+  transform: translateY(-1px);
+}
+
+.buy,
+.wardrobe-bought {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+.buy:hover,
+.wardrobe-bought:hover {
+  background: var(--cream-sunk);
+}
+
+button:disabled,
+button:disabled:hover {
+  opacity: .45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ==========================================================================
+   Inputs / selects / file inputs
+   ========================================================================== */
+input[type="text"],
+input[type="number"],
+input[type="file"],
+select {
+  background: var(--cream-raised);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: .7rem .85rem;
+  font: inherit;
+  color: var(--ink);
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus {
+  outline: none;
+  border-color: var(--pine);
+  box-shadow: 0 0 0 3px rgba(30,58,43,.12);
+}
+
+input[type="file"] {
+  font-size: .85rem;
+  color: var(--ink-soft);
+  border-style: dashed;
+}
+
+input[type="file"]::file-selector-button {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--pine);
+  border-radius: var(--radius-pill);
+  padding: .4rem .9rem;
+  font-size: .8rem;
+  background: transparent;
+  color: var(--pine);
+  margin-right: .6rem;
+  transition: all .18s ease;
+}
+input[type="file"]::file-selector-button:hover {
+  background: var(--pine);
+  color: var(--cream-panel);
+}
+
+/* ==========================================================================
+   Navbar
+   ========================================================================== */
+.nav {
+  background: rgba(244,239,228,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.nav-logo {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.nav-links a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-size: .9rem;
+  font-weight: 500;
+  transition: color .18s ease;
+}
+.nav-links a:hover {
+  color: var(--pine);
+}
+
+/* ==========================================================================
+   Hero
+   ========================================================================== */
+.hero {
+  text-align: center;
+  padding: 72px 0 40px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.hero-title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(2.6rem, 6vw, 4.2rem);
+  line-height: 1.04;
+  letter-spacing: -.02em;
+  margin: .5rem 0 1rem;
+}
+.hero-title em {
+  font-style: italic;
+  color: var(--pine);
+}
+
+.hero-sub {
+  color: var(--ink-soft);
+  font-size: 1.08rem;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* ==========================================================================
+   Stat row
+   ========================================================================== */
+.stat-row {
   display: flex;
   justify-content: center;
-  gap: 1.5rem;
-  margin-top: 1rem;
-  font-size: 0.9rem;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 36px;
+}
+
+.stat {
+  background: var(--cream-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  min-width: 120px;
+  box-shadow: var(--shadow-sm);
+}
+.stat strong {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 1.7rem;
+  color: var(--pine);
+  line-height: 1;
+}
+.stat span {
+  font-size: .75rem;
+  color: var(--ink-faint);
+  margin-top: 4px;
+  display: block;
+}
+
+/* ==========================================================================
+   Panels
+   ========================================================================== */
+.panel {
+  background: var(--cream-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  margin: 22px 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.panel-eyebrow {
+  margin: 0 0 18px;
+}
+
+/* ==========================================================================
+   Banners
+   ========================================================================== */
+.banner {
+  border-radius: var(--radius);
+  padding: .8rem 1.1rem;
+  text-align: center;
+  font-size: .9rem;
+  margin: 18px 0;
+}
+.banner-info {
+  background: var(--info-bg);
+  color: var(--info-ink);
+  border: 1px solid #D5E0D6;
+}
+.banner-warn {
+  background: var(--amber-bg);
+  color: var(--amber-ink);
+  border: 1px solid var(--amber-line);
+}
+
+/* ==========================================================================
+   Uploads
+   ========================================================================== */
+.uploads {
+  display: flex;
+  gap: 18px;
   flex-wrap: wrap;
 }
-.counter strong { display: block; font-size: 1.25rem; color: var(--accent); }
 
-.source-banner {
-  background: #eef3ff;
-  color: #2b4a8f;
-  border-radius: 8px;
-  padding: 0.6rem 0.9rem;
+.upload-box {
+  flex: 1;
+  min-width: 230px;
+  border: 1.5px dashed var(--gold-soft);
+  border-radius: var(--radius);
+  padding: 22px;
   text-align: center;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
+  background: var(--cream-raised);
+  transition: border-color .18s ease;
+}
+.upload-box:hover {
+  border-color: var(--gold);
+}
+.upload-box label {
+  display: block;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 10px;
 }
 
-.similar-alert {
-  background: #fff4e5;
-  color: #8a5a00;
-  border: 1px solid #f0c988;
-  border-radius: 8px;
-  padding: 0.6rem 0.9rem;
-  text-align: center;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
+.preview {
+  max-width: 100%;
+  max-height: 240px;
+  margin-top: 14px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
 }
 
 .change-photo-link {
-  display: block;
-  margin: 0.5rem auto 0;
   background: none;
   border: none;
-  color: var(--accent);
-  font-size: 0.8rem;
+  color: var(--pine);
+  font-size: .82rem;
   text-decoration: underline;
   cursor: pointer;
+  margin-top: 10px;
   padding: 0;
 }
 
-.uploads {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-.upload-box {
-  flex: 1;
-  min-width: 220px;
-  border: 1px dashed #bbb;
-  border-radius: 12px;
-  padding: 1rem;
-  text-align: center;
-}
-.upload-box label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
-.preview { max-width: 100%; max-height: 220px; margin-top: 0.75rem; border-radius: 8px; }
-
+/* ==========================================================================
+   Controls / fields
+   ========================================================================== */
 .controls {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 1.5rem 0;
+  gap: 16px;
+  align-items: flex-end;
   flex-wrap: wrap;
+  margin-top: 22px;
 }
 
-button {
-  cursor: pointer;
-  border: none;
-  border-radius: 8px;
-  padding: 0.6rem 1.1rem;
-  font-size: 0.95rem;
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 150px;
+}
+.field label {
+  font-size: .78rem;
   font-weight: 600;
+  color: var(--ink-soft);
 }
-#tryOnBtn { background: var(--accent); color: white; }
-#tryOnBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.status { text-align: center; color: #666; }
+#tryOnBtn {
+  flex-shrink: 0;
+}
 
-.result { text-align: center; position: relative; }
-.result img { max-width: 100%; border-radius: 12px; }
+/* ==========================================================================
+   Status / result
+   ========================================================================== */
+.status {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: .9rem;
+  margin-top: 16px;
+}
+
+.result {
+  text-align: center;
+}
+.result img {
+  max-width: 100%;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+}
+
+/* ==========================================================================
+   Decision / buy flow
+   ========================================================================== */
+.decision {
+  text-align: center;
+}
+.decision-q {
+  font-weight: 600;
+  margin: 14px 0 12px;
+}
 
 .impact-badge {
   display: inline-block;
-  margin-top: 0.75rem;
-  background: #2f7d4f;
-  color: white;
-  padding: 0.4rem 0.8rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
+  background: var(--pine);
+  color: var(--cream-panel);
+  padding: .45rem 1rem;
+  border-radius: var(--radius-pill);
+  font-size: .82rem;
+  letter-spacing: .01em;
+}
+.impact-badge:empty {
+  display: none;
 }
 
-/* Sustainability badge reuses .impact-badge but sits below it on its own
-   line (long summaries wrap) and gets a muted look while the LLM call is
-   still in flight. */
+/* Sustainability badge reuses .impact-badge but sits on its own line below it
+   (long LLM summaries wrap) and uses the warm gold accent to read as distinct
+   from the pine impact badge. Muted while the brand lookup is still in flight. */
 .sustainability-badge {
   display: block;
   max-width: 100%;
-  background: #2b4a8f;
+  margin-top: 8px;
+  background: var(--gold);
+  line-height: 1.45;
 }
 .sustainability-badge.pending {
-  background: #888;
+  background: var(--ink-faint);
 }
-
-.decision { margin-top: 1.25rem; text-align: center; }
-.decision p { margin-bottom: 0.5rem; font-weight: 600; }
-.skip { background: #2f7d4f; color: white; }
 
 .buy-flow {
   display: inline-flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+  gap: 10px;
+  margin-top: 16px;
   flex-wrap: wrap;
   justify-content: center;
 }
-.buy-flow select {
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  padding: 0.5rem 0.6rem;
-  font-size: 0.9rem;
-}
-.buy { background: #ddd; color: #333; }
 
-.wardrobe-section {
-  margin-top: 2.5rem;
-  border-top: 1px solid #e2e2e2;
-  padding-top: 1.5rem;
+/* ==========================================================================
+   Section head / footer
+   ========================================================================== */
+.section-head {
+  margin: 64px 0 20px;
 }
-.wardrobe-section h2 { margin-bottom: 0.75rem; font-size: 1.15rem; }
+.section-head h2 {
+  font-size: 1.9rem;
+  margin: .25rem 0 0;
+}
 
-.wardrobe-empty {
-  color: #777;
+.site-footer {
   text-align: center;
-  font-size: 0.9rem;
-  padding: 1.5rem 0;
+  color: var(--ink-faint);
+  font-size: .85rem;
+  padding: 40px 0;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-serif);
+  font-style: italic;
 }
 
+/* ==========================================================================
+   Wardrobe — category rows
+   ========================================================================== */
 .wardrobe-gallery {
+  display: block;
+}
+
+.wardrobe-cats {
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 34px;
+}
+
+.wardrobe-cat-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.wardrobe-cat-head h3 {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  margin: 0;
+}
+.wardrobe-cat-count {
+  font-size: .75rem;
+  color: var(--ink-faint);
+  background: var(--cream-sunk);
+  border-radius: var(--radius-pill);
+  padding: 2px 10px;
+}
+
+.wardrobe-row {
+  display: flex;
+  gap: 16px;
   overflow-x: auto;
-  padding-bottom: 0.75rem;
+  padding: 4px 4px 14px;
   scroll-snap-type: x proximity;
+  scrollbar-width: thin;
 }
 
 .wardrobe-card {
-  flex: 0 0 220px;
+  flex: 0 0 230px;
   scroll-snap-align: start;
-  background: #fff;
-  border: 1px solid #e2e2e2;
-  border-radius: 12px;
+  background: var(--cream-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: var(--shadow-sm);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.wardrobe-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
 .wardrobe-card-img {
-  width: 100%;
-  height: 260px;
-  background: #f0f0f0;
+  height: 280px;
+  background: var(--cream-sunk);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.wardrobe-card-img img { width: 100%; height: 100%; object-fit: cover; }
-.wardrobe-card-noimg { color: #999; font-size: 0.85rem; }
+.wardrobe-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.wardrobe-card-noimg {
+  color: var(--ink-faint);
+  font-size: .85rem;
+}
 
-.wardrobe-card-body { padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.wardrobe-card-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
 .wardrobe-card-category {
-  text-transform: capitalize;
   font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--accent);
+  font-size: .72rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--gold);
   margin: 0;
 }
-.wardrobe-card-source { font-size: 0.85rem; color: #555; margin: 0; }
 
-.wardrobe-card-scores { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-.score-chip {
-  font-size: 0.72rem;
-  background: #eef3ff;
-  color: #2b4a8f;
-  border-radius: 999px;
-  padding: 0.2rem 0.55rem;
+.wardrobe-card-source {
+  font-size: .85rem;
+  color: var(--ink-soft);
+  margin: 0;
 }
-.score-chip.pending { background: #f0f0f0; color: #888; }
+
+.wardrobe-card-scores {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.score-chip {
+  font-size: .7rem;
+  background: var(--info-bg);
+  color: var(--info-ink);
+  border-radius: var(--radius-pill);
+  padding: 3px 9px;
+}
+.score-chip.pending {
+  background: var(--cream-sunk);
+  color: var(--ink-faint);
+}
 
 .wardrobe-card-decision {
-  font-size: 0.8rem;
+  font-size: .78rem;
   font-weight: 600;
   margin: 0;
 }
-.decision-skip { color: #2f7d4f; }
-.decision-bought { color: #8a5a00; }
-.decision-undecided { color: #999; }
+.decision-skip { color: var(--pine); }
+.decision-bought { color: var(--amber-ink); }
+.decision-undecided { color: var(--ink-faint); }
+
+.wardrobe-empty {
+  color: var(--ink-faint);
+  text-align: center;
+  padding: 28px 0;
+}
+
+/* ==========================================================================
+   Onboarding page
+   ========================================================================== */
+.onboarding .hero {
+  padding: 64px 0 28px;
+}
+
+.upload-panel {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+
+.swatch {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,.12);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+}
+.swatch span {
+  font-size: .58rem;
+  background: rgba(255,255,255,.88);
+  color: #111;
+  padding: 1px 4px;
+  border-radius: 4px;
+  margin-bottom: -6px;
+}
+
+.palette-card h2 {
+  text-transform: capitalize;
+  margin-top: 0;
+  font-size: 1.8rem;
+}
+
+.palette-meta {
+  color: var(--ink-soft);
+  margin: .35rem 0 1rem;
+}
+
+.palette-label {
+  display: block;
+  margin-top: 18px;
+  font-weight: 600;
+  color: var(--ink);
+  font-size: .9rem;
+}
+
+.continue-link {
+  display: inline-block;
+  margin-top: 22px;
+  text-decoration: none;
+  color: var(--cream-panel);
+}
+
+.back-link {
+  display: block;
+  text-align: center;
+  margin-top: 32px;
+  color: var(--pine);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 640px) {
+  .nav {
+    padding: 14px 18px;
+  }
+  .app, main {
+    padding: 0 16px 72px;
+  }
+  .hero {
+    padding: 48px 0 28px;
+  }
+  .stat-row {
+    gap: 10px;
+  }
+  .controls,
+  .uploads {
+    flex-direction: column;
+  }
+  .field {
+    width: 100%;
+  }
+  /* Let the stacked upload boxes shrink to the viewport: their min-width floor
+     (230px) plus the file input's non-shrinking intrinsic width otherwise
+     forces horizontal page overflow on narrow phones. */
+  .upload-box {
+    min-width: 0;
+  }
+  .upload-box input[type="file"] {
+    max-width: 100%;
+  }
+  /* Wardrobe rows stay horizontally scrollable at all widths — do not stack. */
+}
