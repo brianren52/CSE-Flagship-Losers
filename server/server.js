@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Client } from '@gradio/client';
+import { runTryOn } from './tryonCore.js';
 import { wardrobeRouter } from './wardrobe.js';
 import { colorAnalysisRouter } from './colorAnalysis.js';
 import { sustainabilityRouter } from './sustainability.js';
@@ -12,6 +12,7 @@ const app = express();
 
 app.use(express.json({ limit: '15mb' })); // photos as base64 data URLs
 app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Feature routers -- see CONTRACT.md for the API each one implements.
 // Route bodies live in their own files; keep this file a thin mount point
@@ -35,26 +36,6 @@ app.get('/api/impact', (req, res) => {
   res.json(IMPACT_ESTIMATES[category] || IMPACT_ESTIMATES.other);
 });
 
-// data:image/png;base64,AAAA... -> Blob (what @gradio/client expects for file inputs)
-function dataUrlToBlob(dataUrl) {
-  const match = /^data:(.+);base64,(.*)$/.exec(dataUrl);
-  if (!match) throw new Error('Expected a base64 data URL image');
-  const [, mimeType, base64] = match;
-  return new Blob([Buffer.from(base64, 'base64')], { type: mimeType });
-}
-
-// yisol/IDM-VTON is a free, shared ZeroGPU Space -- connecting is slow-ish,
-// so reuse one client across requests instead of reconnecting every time.
-let clientPromise = null;
-function getClient() {
-  if (!clientPromise) {
-    clientPromise = Client.connect('yisol/IDM-VTON', {
-      hf_token: process.env.HF_TOKEN || undefined,
-    });
-  }
-  return clientPromise;
-}
-
 app.post('/api/tryon', async (req, res) => {
   const { personImage, garmentImage, garmentDescription } = req.body;
 
@@ -63,36 +44,25 @@ app.post('/api/tryon', async (req, res) => {
   }
 
   try {
-    const client = await getClient();
-    const personBlob = dataUrlToBlob(personImage);
-    const garmentBlob = dataUrlToBlob(garmentImage);
-
-    // Schema pulled live from https://yisol-idm-vton.hf.space/info --
-    // the human image has to go through Gradio's ImageEditor shape, not a
-    // plain file, or the Space rejects the call.
-    const result = await client.predict('/tryon', {
-      dict: { background: personBlob, layers: [], composite: null },
-      garm_img: garmentBlob,
-      garment_des: garmentDescription || 'clothing item',
-      is_checked: true,
-      is_checked_crop: false,
-      denoise_steps: 30,
-      seed: 42,
-    });
-
-    const output = result.data?.[0];
-    const outputUrl = output?.url || output?.path;
-
-    if (!outputUrl) {
-      return res.status(502).json({ error: 'Space did not return an image', detail: result });
-    }
-
+    const outputUrl = await runTryOn({ personImage, garmentImage, garmentDescription });
     res.json({ outputUrl });
   } catch (err) {
     const detail = err instanceof Error ? err.message : JSON.stringify(err, null, 2);
     console.error('Try-on generation failed:', detail);
     res.status(500).json({ error: 'Try-on generation failed', detail });
   }
+});
+
+// Return clean JSON for the errors express.json() throws (malformed body ->
+// SyntaxError, oversized photo -> PayloadTooLargeError) instead of Express's
+// default HTML stack-trace page, so the API stays consistent under bad input
+// during a demo. Must be registered after the routes.
+// eslint-disable-next-line no-unused-vars -- Express needs the 4-arg signature
+app.use((err, req, res, next) => {
+  const status = err.status || err.statusCode || 500;
+  const message = status === 413 ? 'Request body too large' : 'Invalid request';
+  if (status >= 500) console.error('Unhandled request error:', err);
+  res.status(status).json({ error: message });
 });
 
 const port = process.env.PORT || 3000;
