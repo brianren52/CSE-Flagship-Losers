@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>déjà wear — your colors</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .swatch-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    .swatch {
+      width: 48px; height: 48px; border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      display: flex; align-items: flex-end; justify-content: center;
+    }
+    .swatch span {
+      font-size: 0.6rem; background: rgba(255, 255, 255, 0.85); color: #111;
+      padding: 1px 3px; border-radius: 4px; margin-bottom: -4px;
+    }
+    .palette-card {
+      border: 1px solid #ddd; border-radius: 12px; padding: 1.25rem;
+      margin-top: 1.5rem; text-align: left;
+    }
+    .palette-card h2 { margin-top: 0; text-transform: capitalize; }
+    .palette-meta { color: #666; margin-bottom: 1rem; }
+    .back-link { display: block; text-align: center; margin-top: 2rem; color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>déjà wear</h1>
+    <p class="tagline">find your colors, once</p>
+  </header>
+
+  <main>
+    <section class="upload-box" style="max-width: 480px; margin: 0 auto;">
+      <label for="personPhoto">Full-body photo of you (good lighting, no filters)</label>
+      <input type="file" id="personPhoto" accept="image/*" />
+      <img id="personPreview" class="preview" hidden />
+      <button id="analyzeBtn" style="margin-top: 1rem; width: 100%;">Analyze my colors</button>
+    </section>
+
+    <p id="status" class="status" hidden></p>
+
+    <section id="paletteCard" class="palette-card" hidden>
+      <h2 id="paletteSeason"></h2>
+      <p class="palette-meta" id="paletteUndertone"></p>
+
+      <strong>Best colors</strong>
+      <div class="swatch-row" id="bestColors"></div>
+
+      <strong style="display: block; margin-top: 1rem;">Colors to avoid</strong>
+      <div class="swatch-row" id="avoidColors"></div>
+
+      <p class="palette-meta" id="analyzedAt" style="margin-top: 1rem;"></p>
+    </section>
+
+    <a class="back-link" href="/">&larr; Back to déjà wear</a>
+  </main>
+
+  <script src="onboarding.js"></script>
+</body>
+</html>
