@@ -113,6 +113,18 @@ button {
   font-size: 0.85rem;
 }
 
+/* Sustainability badge reuses .impact-badge but sits below it on its own
+   line (long summaries wrap) and gets a muted look while the LLM call is
+   still in flight. */
+.sustainability-badge {
+  display: block;
+  max-width: 100%;
+  background: #2b4a8f;
+}
+.sustainability-badge.pending {
+  background: #888;
+}
+
 .decision { margin-top: 1.25rem; text-align: center; }
 .decision p { margin-bottom: 0.5rem; font-weight: 600; }
 .skip { background: #2f7d4f; color: white; }
@@ -204,13 +216,3 @@ button {
 .decision-skip { color: #2f7d4f; }
 .decision-bought { color: #8a5a00; }
 .decision-undecided { color: #999; }
-
-.wardrobe-card-actions { display: flex; gap: 0.5rem; margin-top: 0.25rem; }
-.wardrobe-card-actions button {
-  flex: 1;
-  font-size: 0.8rem;
-  padding: 0.4rem 0.5rem;
-}
-.wardrobe-skip { background: #2f7d4f; color: white; }
-.wardrobe-bought { background: #ddd; color: #333; }
-.wardrobe-card-actions button:disabled { opacity: 0.5; cursor: not-allowed; }

@@ -14,6 +14,7 @@ const statusEl = document.getElementById('status');
 const tryOnPreviewSection = document.getElementById('tryOnPreview');
 const resultImage = document.getElementById('resultImage');
 const impactBadge = document.getElementById('impactBadge');
+const sustainabilityBadge = document.getElementById('sustainabilityBadge');
 const skipBtn = document.getElementById('skipBtn');
 const skipPriceEl = document.getElementById('skipPrice');
 const buyReasonSelect = document.getElementById('buyReason');
@@ -247,6 +248,7 @@ tryOnBtn.addEventListener('click', async () => {
   tryOnBtn.disabled = true;
   tryOnPreviewSection.hidden = true;
   currentItemId = null;
+  resetSustainabilityBadge(); // hide any prior item's badge so it can't be mistaken for this one's
   setStatus('Generating try-on... this can take up to ~2 min (longer if the free queue is busy).');
 
   try {
@@ -279,12 +281,50 @@ tryOnBtn.addEventListener('click', async () => {
 
     // A new wardrobe row now exists in the DB -- refresh the gallery/tally.
     if (window.dejaWearWardrobe) window.dejaWearWardrobe.refresh();
+
+    // Fire-and-forget: sustainability is a slow-ish LLM call and must never
+    // block the skip/buy flow, so it's not awaited here.
+    checkSustainability(currentItemId);
   } catch (err) {
     setStatus(`Try-on image failed, but you can still decide below: ${err.message}`);
   } finally {
     tryOnBtn.disabled = false;
   }
 });
+
+// --- Sustainability badge: brand-level sustainability score/summary for the
+// current item, fetched automatically once try-on succeeds (see
+// server/sustainability.js -- it's an LLM call, so it's slow and can fail;
+// neither case should block skip/buy). ---
+
+function resetSustainabilityBadge() {
+  sustainabilityBadge.hidden = true;
+  sustainabilityBadge.textContent = '';
+  sustainabilityBadge.classList.remove('pending');
+}
+
+async function checkSustainability(itemId) {
+  sustainabilityBadge.textContent = 'checking brand sustainability...';
+  sustainabilityBadge.classList.add('pending');
+  sustainabilityBadge.hidden = false;
+
+  try {
+    const res = await fetch(`/api/wardrobe/${itemId}/sustainability`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `status ${res.status}`);
+
+    // A newer try-on may have started (and reset the badge) while this was
+    // in flight -- don't clobber it with a now-stale result.
+    if (currentItemId !== itemId) return;
+
+    sustainabilityBadge.textContent = `🌱 Sustainability: ${data.sustainabilityScore}/100 — ${data.sustainabilitySummary}`;
+    sustainabilityBadge.classList.remove('pending');
+  } catch (err) {
+    // Never blocks skip/buy -- just fail silently from the user's POV.
+    console.warn('Could not load sustainability score:', err);
+    sustainabilityBadge.hidden = true;
+  }
+}
 
 // The header tally (items skipped, $/CO2/water saved) is derived entirely
 // from GET /api/wardrobe (decision === 'skip') -- see wardrobe.js. This file

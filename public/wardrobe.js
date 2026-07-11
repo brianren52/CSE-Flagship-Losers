@@ -1,12 +1,14 @@
 // Owner: person-a. Renders the wardrobe gallery and derives the header tally
 // (items skipped, $/CO2/water saved) from GET /api/wardrobe -- the DB is the
 // source of truth so the tally survives a page refresh, unlike the old
-// localStorage counters. Skip/bought buttons on each card PATCH
-// /api/wardrobe/:id/decision.
+// localStorage counters. Cards only DISPLAY the decision (skip/bought is
+// decided once, in the #decision section for the current in-progress item in
+// app.js) -- no per-card decision buttons here.
 //
-// Does not touch colorMatchScore / sustainabilityScore beyond rendering
-// placeholders -- those are written by Person B's modules and may be null
-// for a long time after an item is created.
+// Sustainability now lives entirely on the current-item flow in app.js; this
+// file only renders the color-match chip, which is still written by Person
+// B's analyze-color route and may be null for a while after an item is
+// created.
 
 const wardrobeGalleryEl = document.getElementById('wardrobeGallery');
 const wardrobeEmptyEl = document.getElementById('wardrobeEmpty');
@@ -47,8 +49,8 @@ function formatPrice(sourcePrice) {
 }
 
 // Renders a 0-100 score as a chip, or a muted "pending" chip if the score
-// hasn't been computed yet (null until Person B's analyze-color /
-// sustainability routes run against this item).
+// hasn't been computed yet (null until Person B's analyze-color route runs
+// against this item).
 function scoreChip(label, score) {
   if (score === null || score === undefined) {
     return `<span class="score-chip pending">${escapeHtml(label)}: pending</span>`;
@@ -74,13 +76,8 @@ function cardHtml(item) {
         <p class="wardrobe-card-source">${escapeHtml(item.sourceName || 'Unknown source')} · ${priceLabel}</p>
         <div class="wardrobe-card-scores">
           ${scoreChip('Color match', item.colorMatchScore)}
-          ${scoreChip('Sustainability', item.sustainabilityScore)}
         </div>
         <p class="wardrobe-card-decision decision-${escapeHtml(decision)}">${escapeHtml(decisionLabel(decision))}</p>
-        <div class="wardrobe-card-actions">
-          <button class="wardrobe-skip" data-action="skip" data-id="${item.id}" ${decision === 'skip' ? 'disabled' : ''}>Skip</button>
-          <button class="wardrobe-bought" data-action="bought" data-id="${item.id}" ${decision === 'bought' ? 'disabled' : ''}>Bought</button>
-        </div>
       </div>
     </article>
   `;
@@ -141,34 +138,6 @@ async function refresh() {
   renderGallery();
   await renderTally();
 }
-
-async function handleDecisionClick(id, decision) {
-  const res = await fetch(`/api/wardrobe/${id}/decision`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ decision }),
-  });
-  if (!res.ok) throw new Error(`Failed to update decision (status ${res.status})`);
-  const updated = await res.json();
-
-  const idx = wardrobeItems.findIndex((item) => item.id === updated.id);
-  if (idx !== -1) wardrobeItems[idx] = updated;
-
-  renderGallery();
-  await renderTally();
-}
-
-wardrobeGalleryEl.addEventListener('click', (event) => {
-  const button = event.target.closest('button[data-action]');
-  if (!button) return;
-  const id = Number(button.dataset.id);
-  const decision = button.dataset.action;
-  button.disabled = true;
-  handleDecisionClick(id, decision).catch((err) => {
-    console.error(err);
-    button.disabled = false;
-  });
-});
 
 // Exposed so app.js can trigger a refresh after a new try-on is persisted or
 // the current item's decision changes, without either file reaching into the
