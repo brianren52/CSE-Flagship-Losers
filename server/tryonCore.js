@@ -32,18 +32,39 @@ async function runTryOnViaHuggingFace({ personImage, garmentImage, garmentDescri
   const personBlob = dataUrlToBlob(personImage);
   const garmentBlob = dataUrlToBlob(garmentImage);
 
-  // Schema pulled live from https://yisol-idm-vton.hf.space/info --
-  // the human image has to go through Gradio's ImageEditor shape, not a
-  // plain file, or the Space rejects the call.
-  const result = await client.predict('/tryon', {
-    dict: { background: personBlob, layers: [], composite: null },
-    garm_img: garmentBlob,
-    garment_des: garmentDescription || 'clothing item',
-    is_checked: true,
-    is_checked_crop: false,
-    denoise_steps: 30,
-    seed: 42,
-  });
+  let result;
+  try {
+    // Schema pulled live from https://yisol-idm-vton.hf.space/info --
+    // the human image has to go through Gradio's ImageEditor shape, not a
+    // plain file, or the Space rejects the call.
+    result = await client.predict('/tryon', {
+      dict: { background: personBlob, layers: [], composite: null },
+      garm_img: garmentBlob,
+      garment_des: garmentDescription || 'clothing item',
+      is_checked: true,
+      is_checked_crop: false,
+      denoise_steps: 30,
+      seed: 42,
+    });
+  } catch (gradioErr) {
+    // The Space runs its own pose/mask detection internally and throws an
+    // opaque Python exception (surfaced by @gradio/client as a JSON status
+    // blob, e.g. {"stage":"error","message":"An error occurred",...}) when
+    // that fails -- most often because the person photo isn't a clear,
+    // well-lit shot with a person fully visible, or the garment photo isn't
+    // a clean isolated item shot. It's also a shared free GPU queue, so
+    // transient overload produces the same generic error. Re-throw with a
+    // message that points at those causes instead of the raw JSON blob, but
+    // keep the original on .detail for debugging.
+    const error = new Error(
+      'The try-on model (a free shared Hugging Face Space) failed to process these photos. ' +
+        'This usually means the person photo isn\'t a clear, well-lit shot with a person fully visible, ' +
+        'or the item photo isn\'t a clean product shot -- or the shared GPU queue is just overloaded. ' +
+        'Try again, or swap in a clearer photo.'
+    );
+    error.detail = gradioErr instanceof Error ? gradioErr.message : gradioErr;
+    throw error;
+  }
 
   const output = result.data?.[0];
   const outputUrl = output?.url || output?.path;

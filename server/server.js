@@ -50,7 +50,7 @@ app.post('/api/tryon', async (req, res) => {
     res.json({ outputUrl });
   } catch (err) {
     const detail = err instanceof Error ? err.message : JSON.stringify(err, null, 2);
-    console.error('Try-on generation failed:', detail);
+    console.error('Try-on generation failed:', detail, err?.detail ?? '');
     res.status(500).json({ error: 'Try-on generation failed', detail });
   }
 });

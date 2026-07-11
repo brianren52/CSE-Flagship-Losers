@@ -102,6 +102,14 @@ analyzeBtn.addEventListener('click', async () => {
     const res = await fetch('/api/profile');
     const profile = await res.json();
     renderPalette(profile);
+    if (profile.fullBodyImagePath) {
+      // fullBodyImagePath is a server filesystem path (see CONTRACT.md) --
+      // resolve it to the web-servable /uploads/<file> path, same as app.js
+      // does for the auto-load flow.
+      const filename = profile.fullBodyImagePath.split(/[\\/]/).pop();
+      personPreview.src = `/uploads/${filename}`;
+      personPreview.hidden = false;
+    }
     if (returnTo && profile.colorPalette) continueLink.hidden = false;
   } catch {
     // No profile yet -- fine, the form is still usable.

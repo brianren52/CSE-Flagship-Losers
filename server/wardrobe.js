@@ -176,7 +176,7 @@ wardrobeRouter.post('/api/wardrobe/tryon', async (req, res) => {
     res.status(201).json(serializeItem(created));
   } catch (err) {
     const detail = err instanceof Error ? err.message : JSON.stringify(err, null, 2);
-    console.error('Wardrobe try-on failed:', detail);
+    console.error('Wardrobe try-on failed:', detail, err?.detail ?? '');
     res.status(500).json({ error: 'Wardrobe try-on failed', detail });
   }
 });
