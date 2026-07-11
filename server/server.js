@@ -3,12 +3,22 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@gradio/client';
+import { wardrobeRouter } from './wardrobe.js';
+import { colorAnalysisRouter } from './colorAnalysis.js';
+import { sustainabilityRouter } from './sustainability.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
 app.use(express.json({ limit: '15mb' })); // photos as base64 data URLs
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Feature routers -- see CONTRACT.md for the API each one implements.
+// Route bodies live in their own files; keep this file a thin mount point
+// so two people aren't editing the same route handlers.
+app.use(wardrobeRouter);
+app.use(colorAnalysisRouter);
+app.use(sustainabilityRouter);
 
 // Rough, illustrative-only impact-per-item estimates for the demo overlay.
 // Not sourced from a lifecycle-assessment study — swap for real figures later.
