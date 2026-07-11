@@ -4,65 +4,86 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>déjà wear</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>déjà wear</h1>
-    <p class="tagline">see it on you before you buy it &mdash; <a href="/onboarding.html">find your colors</a></p>
-    <div id="counter" class="counter">
-      <span><strong id="itemsSkipped">0</strong> skipped</span>
-      <span><strong id="moneySaved">$0</strong> saved</span>
-      <span><strong id="co2Saved">0</strong> kg CO2 saved</span>
-      <span><strong id="waterSaved">0</strong> L water saved</span>
+  <nav class="nav">
+    <a class="nav-logo" href="/">déjà wear</a>
+    <div class="nav-links">
+      <a href="/onboarding.html">Find your colors</a>
     </div>
-  </header>
+  </nav>
 
-  <main>
-    <p id="sourceBanner" class="source-banner" hidden></p>
-    <p id="similarAlert" class="similar-alert" hidden></p>
+  <main class="app">
+    <header class="hero">
+      <p class="eyebrow">Every purchase deserves a second look</p>
+      <h1 class="hero-title">See it on you.<br><em>Before</em> you buy.</h1>
+      <p class="hero-sub">déjà wear shows you the item on your body, scores how it suits
+        your colors, and tallies what you save every time you skip.</p>
+      <div id="counter" class="stat-row">
+        <div class="stat"><strong id="itemsSkipped">0</strong><span>items skipped</span></div>
+        <div class="stat"><strong id="moneySaved">$0</strong><span>money saved</span></div>
+        <div class="stat"><strong id="co2Saved">0</strong><span>kg CO₂ saved</span></div>
+        <div class="stat"><strong id="waterSaved">0</strong><span>L water saved</span></div>
+      </div>
+    </header>
 
-    <section class="uploads">
-      <div class="upload-box">
-        <label for="personInput" id="personLabel">Photo of you</label>
-        <input type="file" id="personInput" accept="image/*" />
-        <img id="personPreview" class="preview" hidden />
-        <button type="button" id="changePersonBtn" class="change-photo-link" hidden>Use a different photo</button>
+    <p id="sourceBanner" class="banner banner-info" hidden></p>
+    <p id="similarAlert" class="banner banner-warn" hidden></p>
+
+    <section class="panel">
+      <p class="eyebrow panel-eyebrow">Check an item</p>
+      <div class="uploads">
+        <div class="upload-box">
+          <label for="personInput" id="personLabel">Photo of you</label>
+          <input type="file" id="personInput" accept="image/*" />
+          <img id="personPreview" class="preview" hidden />
+          <button type="button" id="changePersonBtn" class="change-photo-link" hidden>Use a different photo</button>
+        </div>
+
+        <div class="upload-box">
+          <label for="garmentInput" id="garmentLabel">Photo of the item</label>
+          <input type="file" id="garmentInput" accept="image/*" />
+          <img id="garmentPreview" class="preview" hidden />
+          <button type="button" id="changeGarmentBtn" class="change-photo-link" hidden>Use a different photo</button>
+        </div>
       </div>
 
-      <div class="upload-box">
-        <label for="garmentInput" id="garmentLabel">Photo of the item</label>
-        <input type="file" id="garmentInput" accept="image/*" />
-        <img id="garmentPreview" class="preview" hidden />
-        <button type="button" id="changeGarmentBtn" class="change-photo-link" hidden>Use a different photo</button>
+      <div class="controls">
+        <div class="field">
+          <label for="itemName">Item name</label>
+          <input type="text" id="itemName" placeholder="Blue hoodie" />
+        </div>
+        <div class="field">
+          <label for="category">Category</label>
+          <select id="category">
+            <option value="top">Top</option>
+            <option value="bottom">Bottom</option>
+            <option value="dress">Dress</option>
+            <option value="shoes">Shoes</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="price">Price ($)</label>
+          <input type="number" id="price" min="0" step="0.01" placeholder="49.99" />
+        </div>
+        <button id="tryOnBtn" class="btn-primary">Try it on</button>
       </div>
+
+      <p id="status" class="status" hidden></p>
     </section>
 
-    <section class="controls">
-      <label for="itemName">Item name</label>
-      <input type="text" id="itemName" placeholder="Blue hoodie" />
-      <label for="category">Category</label>
-      <select id="category">
-        <option value="top">Top</option>
-        <option value="bottom">Bottom</option>
-        <option value="dress">Dress</option>
-        <option value="shoes">Shoes</option>
-        <option value="other">Other</option>
-      </select>
-      <label for="price">Price ($)</label>
-      <input type="number" id="price" min="0" step="0.01" placeholder="49.99" />
-      <button id="tryOnBtn">Try it on</button>
-    </section>
-
-    <p id="status" class="status" hidden></p>
-
-    <section id="tryOnPreview" class="result" hidden>
+    <section id="tryOnPreview" class="panel result" hidden>
       <img id="resultImage" alt="Try-on result" />
     </section>
 
-    <section id="decision" class="decision">
+    <section id="decision" class="panel decision">
       <div id="impactBadge" class="impact-badge"></div>
-      <p>Already own something like this?</p>
+      <p class="decision-q">Already own something like this?</p>
       <button id="skipBtn" class="skip">I'll skip it (save $<span id="skipPrice">0</span>)</button>
 
       <div class="buy-flow">
@@ -79,11 +100,16 @@
     </section>
 
     <section class="wardrobe-section">
-      <h2>Your wardrobe</h2>
+      <div class="section-head">
+        <p class="eyebrow">Your wardrobe</p>
+        <h2>Everything you've tried on</h2>
+      </div>
       <p id="wardrobeEmpty" class="wardrobe-empty" hidden>No try-ons yet — add a photo above to get started.</p>
       <div id="wardrobeGallery" class="wardrobe-gallery"></div>
     </section>
   </main>
+
+  <footer class="site-footer"><p>déjà wear · think before you buy.</p></footer>
 
   <script src="app.js"></script>
   <script src="wardrobe.js"></script>

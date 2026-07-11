@@ -56,6 +56,9 @@ function scoreChip(label, score) {
   return `<span class="score-chip">${escapeHtml(label)}: ${escapeHtml(score)}</span>`;
 }
 
+const CATEGORY_ORDER = ['top', 'bottom', 'dress', 'shoes', 'other'];
+const CATEGORY_LABELS = { top: 'Tops', bottom: 'Bottoms', dress: 'Dresses', shoes: 'Shoes', other: 'Other' };
+
 function cardHtml(item) {
   const price = formatPrice(item.sourcePrice);
   const priceLabel = item.sourcePrice ? `$${price.toFixed(2)}` : '—';
@@ -101,7 +104,32 @@ function renderGallery() {
     return;
   }
   wardrobeEmptyEl.hidden = true;
-  wardrobeGalleryEl.innerHTML = wardrobeItems.map(cardHtml).join('');
+
+  // Group items by category, keeping the newest-first order within each group.
+  const groups = new Map();
+  for (const item of wardrobeItems) {
+    const cat = CATEGORY_ORDER.includes(item.category) ? item.category : 'other';
+    if (!groups.has(cat)) groups.set(cat, []);
+    groups.get(cat).push(item);
+  }
+
+  const sections = CATEGORY_ORDER
+    .filter((cat) => groups.has(cat))
+    .map((cat) => {
+      const items = groups.get(cat);
+      const cards = items.map(cardHtml).join('');
+      return `
+        <section class="wardrobe-cat">
+          <div class="wardrobe-cat-head">
+            <h3>${escapeHtml(CATEGORY_LABELS[cat])}</h3>
+            <span class="wardrobe-cat-count">${items.length}</span>
+          </div>
+          <div class="wardrobe-row">${cards}</div>
+        </section>`;
+    })
+    .join('');
+
+  wardrobeGalleryEl.innerHTML = `<div class="wardrobe-cats">${sections}</div>`;
 }
 
 async function renderTally() {
