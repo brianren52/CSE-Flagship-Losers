@@ -2,6 +2,10 @@ const personInput = document.getElementById('personInput');
 const garmentInput = document.getElementById('garmentInput');
 const personPreview = document.getElementById('personPreview');
 const garmentPreview = document.getElementById('garmentPreview');
+const personLabel = document.getElementById('personLabel');
+const garmentLabel = document.getElementById('garmentLabel');
+const changePersonBtn = document.getElementById('changePersonBtn');
+const changeGarmentBtn = document.getElementById('changeGarmentBtn');
 const itemNameInput = document.getElementById('itemName');
 const categorySelect = document.getElementById('category');
 const priceInput = document.getElementById('price');
@@ -22,12 +26,84 @@ let garmentDataUrl = null;
 let currentImpact = null;
 let currentItemId = null; // id of the wardrobe_items row for the in-progress item, once try-on succeeds
 
-// Prefill from a nudge extension / share-sheet: /?price=49.99&name=Blue+Hoodie&source=amazon.com
-(function prefillFromQueryParams() {
+// --- Auto-fill photos: the user shouldn't have to manually supply either
+// photo on every check. The person photo comes from their one-time profile
+// (server/uploads, via colorAnalysis.js); the garment photo comes from the
+// product image URL the extension scraped off the page, fetched server-side
+// via /api/proxy-image (avoids CORS issues fetching arbitrary retailer CDNs
+// from the content script). Both fall back to the manual file inputs if
+// auto-load isn't available or fails -- never a hard blocker.
+
+function useAutoPhoto({ dataUrl, previewEl, inputEl, labelEl, changeBtn }) {
+  previewEl.src = dataUrl;
+  previewEl.hidden = false;
+  inputEl.hidden = true;
+  labelEl.hidden = true;
+  changeBtn.hidden = false;
+}
+
+function revealManualInput({ previewEl, inputEl, labelEl, changeBtn }) {
+  inputEl.hidden = false;
+  labelEl.hidden = false;
+  changeBtn.hidden = true;
+  previewEl.hidden = true;
+}
+
+changePersonBtn.addEventListener('click', () => {
+  personDataUrl = null;
+  revealManualInput({ previewEl: personPreview, inputEl: personInput, labelEl: personLabel, changeBtn: changePersonBtn });
+});
+
+changeGarmentBtn.addEventListener('click', () => {
+  garmentDataUrl = null;
+  revealManualInput({ previewEl: garmentPreview, inputEl: garmentInput, labelEl: garmentLabel, changeBtn: changeGarmentBtn });
+});
+
+// Returns the saved profile, or redirects to onboarding and returns null if
+// no full-body photo has been analyzed yet (first-time use).
+async function ensureProfileOrRedirect() {
+  const res = await fetch('/api/profile');
+  const profile = await res.json();
+  if (!profile.fullBodyImagePath) {
+    const returnTo = window.location.pathname + window.location.search;
+    window.location.href = `/onboarding.html?returnTo=${encodeURIComponent(returnTo)}`;
+    return null;
+  }
+  return profile;
+}
+
+async function autoLoadPersonPhoto(profile) {
+  try {
+    const filename = profile.fullBodyImagePath.split(/[\\/]/).pop();
+    const imgRes = await fetch(`/uploads/${filename}`);
+    if (!imgRes.ok) return;
+    const blob = await imgRes.blob();
+    personDataUrl = await fileToDataUrl(blob);
+    useAutoPhoto({ dataUrl: personDataUrl, previewEl: personPreview, inputEl: personInput, labelEl: personLabel, changeBtn: changePersonBtn });
+  } catch (err) {
+    console.warn('Could not auto-load profile photo, falling back to manual upload:', err);
+  }
+}
+
+async function autoLoadGarmentImage(imageUrl) {
+  try {
+    const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(imageUrl)}`);
+    const data = await res.json();
+    if (!res.ok || !data.dataUrl) throw new Error(data.error || 'proxy fetch failed');
+    garmentDataUrl = data.dataUrl;
+    useAutoPhoto({ dataUrl: garmentDataUrl, previewEl: garmentPreview, inputEl: garmentInput, labelEl: garmentLabel, changeBtn: changeGarmentBtn });
+  } catch (err) {
+    console.warn('Could not auto-load product image, falling back to manual upload:', err);
+  }
+}
+
+// Prefill from a nudge extension / share-sheet: /?price=49.99&name=Blue+Hoodie&source=amazon.com&image=<url>
+(async function init() {
   const params = new URLSearchParams(window.location.search);
   const price = params.get('price');
   const name = params.get('name');
   const source = params.get('source');
+  const imageUrl = params.get('image');
 
   if (price) priceInput.value = price;
   if (name) itemNameInput.value = name;
@@ -39,6 +115,12 @@ let currentItemId = null; // id of the wardrobe_items row for the in-progress it
 
   checkForSimilarPurchase();
   refreshImpact();
+
+  const profile = await ensureProfileOrRedirect();
+  if (!profile) return; // redirecting to onboarding
+
+  await autoLoadPersonPhoto(profile);
+  if (imageUrl) await autoLoadGarmentImage(imageUrl);
 })();
 
 // --- Purchase history: items you've confirmed buying through deja-wear,

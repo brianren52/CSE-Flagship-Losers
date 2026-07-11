@@ -8,8 +8,14 @@ const paletteUndertone = document.getElementById('paletteUndertone');
 const bestColorsEl = document.getElementById('bestColors');
 const avoidColorsEl = document.getElementById('avoidColors');
 const analyzedAtEl = document.getElementById('analyzedAt');
+const continueLink = document.getElementById('continueLink');
 
 let personDataUrl = null;
+
+// If we got here via app.js redirecting a first-time user (no profile yet),
+// this carries them back to the item they were checking once setup is done.
+const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+if (returnTo) continueLink.href = returnTo;
 
 function setStatus(message) {
   if (!message) {
@@ -82,6 +88,7 @@ analyzeBtn.addEventListener('click', async () => {
 
     renderPalette(data);
     setStatus('Done -- this is cached, you only need to do this once.');
+    if (returnTo) continueLink.hidden = false;
   } catch (err) {
     setStatus(`Error: ${err.message}`);
   } finally {
@@ -95,6 +102,7 @@ analyzeBtn.addEventListener('click', async () => {
     const res = await fetch('/api/profile');
     const profile = await res.json();
     renderPalette(profile);
+    if (returnTo && profile.colorPalette) continueLink.hidden = false;
   } catch {
     // No profile yet -- fine, the form is still usable.
   }

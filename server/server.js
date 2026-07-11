@@ -6,6 +6,7 @@ import { runTryOn } from './tryonCore.js';
 import { wardrobeRouter } from './wardrobe.js';
 import { colorAnalysisRouter } from './colorAnalysis.js';
 import { sustainabilityRouter } from './sustainability.js';
+import { imageProxyRouter } from './imageProxy.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -20,6 +21,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(wardrobeRouter);
 app.use(colorAnalysisRouter);
 app.use(sustainabilityRouter);
+app.use(imageProxyRouter);
 
 // Rough, illustrative-only impact-per-item estimates for the demo overlay.
 // Not sourced from a lifecycle-assessment study — swap for real figures later.

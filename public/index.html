@@ -24,15 +24,17 @@
 
     <section class="uploads">
       <div class="upload-box">
-        <label for="personInput">Photo of you</label>
+        <label for="personInput" id="personLabel">Photo of you</label>
         <input type="file" id="personInput" accept="image/*" />
         <img id="personPreview" class="preview" hidden />
+        <button type="button" id="changePersonBtn" class="change-photo-link" hidden>Use a different photo</button>
       </div>
 
       <div class="upload-box">
-        <label for="garmentInput">Photo of the item</label>
+        <label for="garmentInput" id="garmentLabel">Photo of the item</label>
         <input type="file" id="garmentInput" accept="image/*" />
         <img id="garmentPreview" class="preview" hidden />
+        <button type="button" id="changeGarmentBtn" class="change-photo-link" hidden>Use a different photo</button>
       </div>
     </section>
 

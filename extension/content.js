@@ -170,10 +170,126 @@
     }
   }
 
+  // --- Product image extraction --------------------------------------------
+  // Same fallback-chain philosophy as above, but we only ever hand off the
+  // image *URL* here, never fetch/convert it in the content script -- an
+  // arbitrary retailer CDN image is very likely to fail a cross-origin
+  // fetch or taint a canvas. The server fetches it instead (no CORS there).
+
+  function toAbsoluteUrl(src) {
+    try {
+      return src ? new URL(src, location.href).href : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function extractImageFromJsonLd(doc) {
+    try {
+      const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
+      for (const script of scripts) {
+        let data;
+        try {
+          data = JSON.parse(script.textContent);
+        } catch (_) {
+          continue;
+        }
+        const candidates = Array.isArray(data) ? data : [data];
+        for (const entry of candidates) {
+          const nodes = entry && Array.isArray(entry['@graph']) ? entry['@graph'] : [entry];
+          for (const node of nodes) {
+            if (!node || typeof node !== 'object') continue;
+            const type = node['@type'];
+            const isProduct = type === 'Product' || (Array.isArray(type) && type.includes('Product'));
+            if (!isProduct) continue;
+            let image = node.image;
+            if (Array.isArray(image)) image = image[0];
+            if (image && typeof image === 'object') image = image.url;
+            const absolute = toAbsoluteUrl(image);
+            if (absolute) return absolute;
+          }
+        }
+      }
+    } catch (_) {
+      // ignore, fall through
+    }
+    return null;
+  }
+
+  function extractImageFromMeta(doc) {
+    try {
+      const el = doc.querySelector('meta[property="og:image"]') || doc.querySelector('meta[name="twitter:image"]');
+      return el ? toAbsoluteUrl(el.getAttribute('content')) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Best-effort per-site main product image selectors. Same low-confidence
+  // caveat as SITE_SELECTORS above -- these break when retailers redesign.
+  const SITE_IMAGE_SELECTORS = [
+    { test: (host) => host.includes('amazon.'), selectors: ['#landingImage', '#imgTagWrapperId img', '#main-image-container img'] },
+    { test: (host) => host.includes('ebay.'), selectors: ['#icImg', '.ux-image-carousel-item img'] },
+    { test: (host) => host.includes('asos.'), selectors: ['[data-testid="product-gallery-image"] img', 'picture img'] },
+    { test: (host) => host.includes('zara.'), selectors: ['.media-image img', 'picture img'] },
+    { test: (host) => host.includes('hm.com'), selectors: ['.pdp-image img', 'picture img'] },
+    { test: (host) => host.includes('shein.'), selectors: ['.product-intro__main-image img', 'picture img'] },
+  ];
+
+  function extractImageFromSiteSelectors(doc, hostname) {
+    try {
+      const site = SITE_IMAGE_SELECTORS.find((s) => s.test(hostname));
+      if (!site) return null;
+      for (const sel of site.selectors) {
+        const el = doc.querySelector(sel);
+        const src = el && (el.currentSrc || el.src || el.getAttribute('src'));
+        const absolute = toAbsoluteUrl(src);
+        if (absolute) return absolute;
+      }
+    } catch (_) {
+      // ignore, fall through
+    }
+    return null;
+  }
+
+  // Absolute fallback: the largest <img> on the page above a small-icon
+  // size floor. Crude, but works surprisingly often as a last resort.
+  function extractImageFallback(doc) {
+    try {
+      let best = null;
+      let bestArea = 0;
+      for (const img of doc.querySelectorAll('img')) {
+        const area = (img.naturalWidth || img.width || 0) * (img.naturalHeight || img.height || 0);
+        if (area > bestArea && area > 100 * 100) {
+          bestArea = area;
+          best = img;
+        }
+      }
+      const src = best && (best.currentSrc || best.src);
+      return toAbsoluteUrl(src);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function extractProductImage(doc = document, hostname = location.hostname) {
+    try {
+      return (
+        extractImageFromJsonLd(doc) ||
+        extractImageFromMeta(doc) ||
+        extractImageFromSiteSelectors(doc, hostname) ||
+        extractImageFallback(doc)
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   function injectBanner() {
     if (document.getElementById('deja-wear-banner')) return;
 
     const { name, price } = extractProductInfo();
+    const image = extractProductImage();
 
     const banner = document.createElement('div');
     banner.id = 'deja-wear-banner';
@@ -186,6 +302,7 @@
 
     document.getElementById('deja-wear-check').addEventListener('click', () => {
       const params = new URLSearchParams({ source: location.hostname, name, price });
+      if (image) params.set('image', image);
       window.open(`${APP_URL}/?${params.toString()}`, '_blank');
     });
 

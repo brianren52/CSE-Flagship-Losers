@@ -51,6 +51,18 @@ h1 { margin-bottom: 0.25rem; }
   margin-bottom: 1rem;
 }
 
+.change-photo-link {
+  display: block;
+  margin: 0.5rem auto 0;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.8rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
 .uploads {
   display: flex;
   gap: 1rem;
