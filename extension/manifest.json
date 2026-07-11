@@ -3,6 +3,10 @@
   "name": "déjà wear nudge",
   "version": "0.1.0",
   "description": "Pings you to check déjà wear before you buy clothes online.",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": ["http://localhost:3000/*"],
   "content_scripts": [
     {
       "matches": [
