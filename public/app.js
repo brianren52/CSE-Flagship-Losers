@@ -176,7 +176,7 @@ tryOnBtn.addEventListener('click', async () => {
       body: JSON.stringify({
         personImage: personDataUrl,
         garmentImage: garmentDataUrl,
-        garmentDescription: categorySelect.value,
+        garmentDescription: itemNameInput.value || categorySelect.value,
         category: categorySelect.value,
         sourceUrl,
         sourceName,

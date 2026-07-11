@@ -53,6 +53,18 @@ app.post('/api/tryon', async (req, res) => {
   }
 });
 
+// Return clean JSON for the errors express.json() throws (malformed body ->
+// SyntaxError, oversized photo -> PayloadTooLargeError) instead of Express's
+// default HTML stack-trace page, so the API stays consistent under bad input
+// during a demo. Must be registered after the routes.
+// eslint-disable-next-line no-unused-vars -- Express needs the 4-arg signature
+app.use((err, req, res, next) => {
+  const status = err.status || err.statusCode || 500;
+  const message = status === 413 ? 'Request body too large' : 'Invalid request';
+  if (status >= 500) console.error('Unhandled request error:', err);
+  res.status(status).json({ error: message });
+});
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`deja-wear running at http://localhost:${port}`);

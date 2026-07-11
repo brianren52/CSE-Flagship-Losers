@@ -37,7 +37,12 @@ function escapeHtml(str) {
 }
 
 function formatPrice(sourcePrice) {
-  const num = Number(sourcePrice);
+  // sourcePrice is TEXT in the DB and could arrive with currency symbols or
+  // thousands separators (e.g. "$1,234.56") from a scraped/query-param value.
+  // Strip everything but digits and the decimal point before parsing so the
+  // tally doesn't silently undercount to $0 on a NaN.
+  const cleaned = String(sourcePrice ?? '').replace(/[^0-9.]/g, '');
+  const num = Number(cleaned);
   return Number.isFinite(num) ? num : 0;
 }
 

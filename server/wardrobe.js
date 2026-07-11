@@ -17,6 +17,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, 'uploads');
 fs.mkdirSync(uploadsDir, { recursive: true });
 
+// Keep in sync with CONTRACT.md's wardrobe_items.category enum. Anything else
+// is rejected server-side (rather than silently stored) so bad data can't slip
+// in via a direct API call and then quietly fall back to "other" estimates.
+const ALLOWED_CATEGORIES = new Set(['top', 'bottom', 'dress', 'shoes', 'other']);
+
 export const wardrobeRouter = express.Router();
 
 // ---- helpers -----------------------------------------------------------
@@ -114,6 +119,13 @@ wardrobeRouter.post('/api/wardrobe/tryon', async (req, res) => {
     return res.status(400).json({ error: 'garmentImage and personImage are required' });
   }
 
+  const categoryValue = category || 'other';
+  if (!ALLOWED_CATEGORIES.has(categoryValue)) {
+    return res.status(400).json({
+      error: `category must be one of: ${[...ALLOWED_CATEGORIES].join(', ')}`,
+    });
+  }
+
   try {
     // IDM-VTON on the shared ZeroGPU Space can legitimately take up to ~2
     // minutes (queueing + inference) -- no artificial timeout is set here,
@@ -122,11 +134,26 @@ wardrobeRouter.post('/api/wardrobe/tryon', async (req, res) => {
     const outputUrl = await runTryOn({ personImage, garmentImage, garmentDescription });
 
     // Persist both the garment image we were given and the (possibly
-    // ephemeral) try-on result, since the Space's own copy can expire.
-    const [garmentImagePath, tryonImagePath] = await Promise.all([
+    // ephemeral) try-on result, since the Space's own copy can expire. Use
+    // allSettled so that if one write fails (e.g. the ephemeral URL 404s), we
+    // can delete whichever file DID land instead of leaving an orphaned upload
+    // with no DB row -- these accumulate fast if the HF Space is flaky mid-demo.
+    const [garmentResult, tryonResult] = await Promise.allSettled([
       saveDataUrlImage(garmentImage, 'garment'),
       downloadOutputImage(outputUrl, 'tryon'),
     ]);
+
+    if (garmentResult.status === 'rejected' || tryonResult.status === 'rejected') {
+      for (const settled of [garmentResult, tryonResult]) {
+        if (settled.status === 'fulfilled') {
+          fsp.unlink(settled.value).catch(() => {}); // best-effort orphan cleanup
+        }
+      }
+      throw (garmentResult.reason || tryonResult.reason);
+    }
+
+    const garmentImagePath = garmentResult.value;
+    const tryonImagePath = tryonResult.value;
 
     const createdAt = new Date().toISOString();
 
@@ -136,7 +163,7 @@ wardrobeRouter.post('/api/wardrobe/tryon', async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, 'undecided', ?)
     `);
     const info = insertStmt.run(
-      category || 'other',
+      categoryValue,
       sourceUrl || null,
       sourceName || null,
       sourcePrice || null,
