@@ -20,6 +20,7 @@ const similarAlert = document.getElementById('similarAlert');
 let personDataUrl = null;
 let garmentDataUrl = null;
 let currentImpact = null;
+let currentItemId = null; // id of the wardrobe_items row for the in-progress item, once try-on succeeds
 
 // Prefill from a nudge extension / share-sheet: /?price=49.99&name=Blue+Hoodie&source=amazon.com
 (function prefillFromQueryParams() {
@@ -144,6 +145,17 @@ function setStatus(message) {
   statusEl.hidden = false;
 }
 
+// Query params carried over from a nudge extension / share-sheet link, used
+// to fill in the wardrobe_items sourceUrl/sourceName/sourcePrice columns.
+function currentSourceInfo() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    sourceUrl: params.get('url') || params.get('sourceUrl') || null,
+    sourceName: itemNameInput.value || params.get('name') || params.get('source') || null,
+    sourcePrice: priceInput.value || params.get('price') || null,
+  };
+}
+
 tryOnBtn.addEventListener('click', async () => {
   if (!personDataUrl || !garmentDataUrl) {
     setStatus('Add a photo of you and the item first.');
@@ -152,16 +164,23 @@ tryOnBtn.addEventListener('click', async () => {
 
   tryOnBtn.disabled = true;
   tryOnPreviewSection.hidden = true;
-  setStatus('Generating try-on... this can take 10-30s (longer if the free queue is busy).');
+  currentItemId = null;
+  setStatus('Generating try-on... this can take up to ~2 min (longer if the free queue is busy).');
 
   try {
-    const tryOnRes = await fetch('/api/tryon', {
+    const { sourceUrl, sourceName, sourcePrice } = currentSourceInfo();
+
+    const tryOnRes = await fetch('/api/wardrobe/tryon', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         personImage: personDataUrl,
         garmentImage: garmentDataUrl,
         garmentDescription: categorySelect.value,
+        category: categorySelect.value,
+        sourceUrl,
+        sourceName,
+        sourcePrice,
       }),
     });
 
@@ -171,9 +190,13 @@ tryOnBtn.addEventListener('click', async () => {
       throw new Error(`${tryOnData.error || 'Try-on failed'}${detail ? ` — ${detail}` : ''}`);
     }
 
-    resultImage.src = tryOnData.outputUrl;
+    currentItemId = tryOnData.id;
+    resultImage.src = tryOnData.tryonImagePath;
     tryOnPreviewSection.hidden = false;
     setStatus(null);
+
+    // A new wardrobe row now exists in the DB -- refresh the gallery/tally.
+    if (window.dejaWearWardrobe) window.dejaWearWardrobe.refresh();
   } catch (err) {
     setStatus(`Try-on image failed, but you can still decide below: ${err.message}`);
   } finally {
@@ -181,37 +204,37 @@ tryOnBtn.addEventListener('click', async () => {
   }
 });
 
-function loadCounters() {
-  const stored = JSON.parse(localStorage.getItem('dejaWearCounters') || '{}');
-  return {
-    itemsSkipped: stored.itemsSkipped || 0,
-    moneySaved: stored.moneySaved || 0,
-    co2Saved: stored.co2Saved || 0,
-    waterSaved: stored.waterSaved || 0,
-  };
+// The header tally (items skipped, $/CO2/water saved) is derived entirely
+// from GET /api/wardrobe (decision === 'skip') -- see wardrobe.js. This file
+// only handles the current in-progress item's skip/buy actions.
+
+async function recordDecision(decision) {
+  if (!currentItemId) {
+    // No wardrobe row yet (try-on wasn't run or failed before persisting) --
+    // nothing to PATCH, but let the user still get the "logged" UX below.
+    return null;
+  }
+  const res = await fetch(`/api/wardrobe/${currentItemId}/decision`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ decision }),
+  });
+  if (!res.ok) throw new Error(`Failed to record decision (status ${res.status})`);
+  return res.json();
 }
 
-function renderCounters() {
-  const counters = loadCounters();
-  document.getElementById('itemsSkipped').textContent = counters.itemsSkipped;
-  document.getElementById('moneySaved').textContent = `$${counters.moneySaved.toFixed(2)}`;
-  document.getElementById('co2Saved').textContent = counters.co2Saved.toFixed(1);
-  document.getElementById('waterSaved').textContent = counters.waterSaved.toFixed(0);
-}
-
-skipBtn.addEventListener('click', () => {
+skipBtn.addEventListener('click', async () => {
   if (!currentImpact) return;
-  const counters = loadCounters();
-  counters.itemsSkipped += 1;
-  counters.moneySaved += currentImpact.price || 0;
-  counters.co2Saved += currentImpact.co2Kg;
-  counters.waterSaved += currentImpact.waterL;
-  localStorage.setItem('dejaWearCounters', JSON.stringify(counters));
-  renderCounters();
-  setStatus('Nice — logged as skipped. Try another item.');
+  try {
+    await recordDecision('skip');
+    setStatus('Nice — logged as skipped. Try another item.');
+    if (window.dejaWearWardrobe) window.dejaWearWardrobe.refresh();
+  } catch (err) {
+    setStatus(`Couldn't save that decision: ${err.message}`);
+  }
 });
 
-buyBtn.addEventListener('click', () => {
+buyBtn.addEventListener('click', async () => {
   if (!buyReasonSelect.value) {
     setStatus('Pick a reason first — even "no similar item" counts.');
     return;
@@ -225,9 +248,14 @@ buyBtn.addEventListener('click', () => {
     date: new Date().toISOString(),
   });
 
+  try {
+    await recordDecision('bought');
+    if (window.dejaWearWardrobe) window.dejaWearWardrobe.refresh();
+  } catch (err) {
+    console.error(err);
+  }
+
   buyReasonSelect.value = '';
   setStatus('Logged. Future similar items will flag this purchase.');
   checkForSimilarPurchase();
 });
-
-renderCounters();
