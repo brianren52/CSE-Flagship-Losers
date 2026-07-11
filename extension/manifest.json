@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "déjà wear nudge",
+  "version": "0.1.0",
+  "description": "Pings you to check déjà wear before you buy clothes online.",
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.amazon.com/*",
+        "*://*.amazon.com.au/*",
+        "*://*.shein.com/*",
+        "*://*.asos.com/*",
+        "*://*.ebay.com/*",
+        "*://*.zara.com/*",
+        "*://*.hm.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
