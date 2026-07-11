@@ -2,8 +2,8 @@ import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import Anthropic from '@anthropic-ai/sdk';
 import { db } from './db.js';
+import { callGemini } from './geminiClient.js';
 
 // Owner: Person B
 // Implements: POST /api/profile/photo, GET /api/profile, POST /api/wardrobe/:id/analyze-color
@@ -15,8 +15,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, 'uploads');
 
 export const colorAnalysisRouter = express.Router();
-
-const anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY from env
 
 // data:image/png;base64,AAAA... -> { mimeType, buffer, extension }
 function parseDataUrl(dataUrl) {
@@ -46,7 +44,6 @@ const PALETTE_SCHEMA = {
     avoidColors: { type: 'array', items: { type: 'string' }, description: 'Hex codes' },
   },
   required: ['season', 'undertone', 'bestColors', 'avoidColors'],
-  additionalProperties: false,
 };
 
 colorAnalysisRouter.post('/api/profile/photo', async (req, res) => {
@@ -61,29 +58,19 @@ colorAnalysisRouter.post('/api/profile/photo', async (req, res) => {
     const filePath = path.join(uploadsDir, filename);
     fs.writeFileSync(filePath, buffer);
 
-    const response = await anthropic.messages.create({
-      model: 'claude-opus-4-8',
-      max_tokens: 1024,
-      output_config: { format: { type: 'json_schema', schema: PALETTE_SCHEMA } },
-      messages: [
+    const text = await callGemini({
+      parts: [
         {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text:
-                'Analyze this person\'s natural coloring (skin, hair, eyes) and determine their ' +
-                'seasonal color palette (spring/summer/autumn/winter), undertone (warm/cool/neutral), ' +
-                'and 6-8 best hex colors + 4-6 colors to avoid for clothing.',
-            },
-            { type: 'image', source: { type: 'base64', media_type: mimeType, data: buffer.toString('base64') } },
-          ],
+          text:
+            'Analyze this person\'s natural coloring (skin, hair, eyes) and determine their ' +
+            'seasonal color palette (spring/summer/autumn/winter), undertone (warm/cool/neutral), ' +
+            'and 6-8 best hex colors + 4-6 colors to avoid for clothing.',
         },
+        { inline_data: { mime_type: mimeType, data: buffer.toString('base64') } },
       ],
+      schema: PALETTE_SCHEMA,
     });
-
-    const textBlock = response.content.find((b) => b.type === 'text');
-    const colorPalette = JSON.parse(textBlock.text);
+    const colorPalette = JSON.parse(text);
 
     const analyzedAt = new Date().toISOString();
     db.prepare(
@@ -116,7 +103,6 @@ const COLOR_MATCH_SCHEMA = {
     colorMatchNotes: { type: 'string', description: 'One or two plain-language sentences explaining the score' },
   },
   required: ['dominantColors', 'colorMatchScore', 'colorMatchNotes'],
-  additionalProperties: false,
 };
 
 colorAnalysisRouter.post('/api/wardrobe/:id/analyze-color', async (req, res) => {
@@ -134,29 +120,19 @@ colorAnalysisRouter.post('/api/wardrobe/:id/analyze-color', async (req, res) => 
     const garmentImage = loadImageAsBase64(item.garmentImagePath);
     const palette = JSON.parse(profile.colorPalette);
 
-    const response = await anthropic.messages.create({
-      model: 'claude-opus-4-8',
-      max_tokens: 1024,
-      output_config: { format: { type: 'json_schema', schema: COLOR_MATCH_SCHEMA } },
-      messages: [
+    const text = await callGemini({
+      parts: [
         {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text:
-                `Extract this garment's dominant hex colors, then judge how well it suits someone with ` +
-                `this seasonal palette: ${JSON.stringify(palette)}. Score 0-100 and give a one or two ` +
-                `sentence plain-language explanation.`,
-            },
-            { type: 'image', source: { type: 'base64', media_type: garmentImage.mimeType, data: garmentImage.data } },
-          ],
+          text:
+            `Extract this garment's dominant hex colors, then judge how well it suits someone with ` +
+            `this seasonal palette: ${JSON.stringify(palette)}. Score 0-100 and give a one or two ` +
+            `sentence plain-language explanation.`,
         },
+        { inline_data: { mime_type: garmentImage.mimeType, data: garmentImage.data } },
       ],
+      schema: COLOR_MATCH_SCHEMA,
     });
-
-    const textBlock = response.content.find((b) => b.type === 'text');
-    const { dominantColors, colorMatchScore, colorMatchNotes } = JSON.parse(textBlock.text);
+    const { dominantColors, colorMatchScore, colorMatchNotes } = JSON.parse(text);
 
     db.prepare(
       `UPDATE wardrobe_items SET garmentDominantColors = ?, colorMatchScore = ?, colorMatchNotes = ? WHERE id = ?`

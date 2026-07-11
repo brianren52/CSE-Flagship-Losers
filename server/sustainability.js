@@ -1,6 +1,6 @@
 import express from 'express';
-import Anthropic from '@anthropic-ai/sdk';
 import { db } from './db.js';
+import { callGemini } from './geminiClient.js';
 
 // Owner: Person B
 // Implements: POST /api/wardrobe/:id/sustainability
@@ -9,10 +9,12 @@ import { db } from './db.js';
 // told to cite real sources and say "insufficient information" rather than
 // invent specifics. Cache by normalized brand name so repeat lookups for the
 // same brand are instant, not re-searched every time.
+//
+// Gemini rejects responseSchema combined with the google_search tool on
+// this model line, so this asks for a fenced JSON block in the final text
+// and extracts it, rather than using structured output.
 
 export const sustainabilityRouter = express.Router();
-
-const anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY from env
 
 // Rough, labeled-as-generic fallback when web search turns up nothing for a
 // brand. Not sourced from a real dataset -- purely a placeholder so the UI
@@ -29,9 +31,9 @@ function normalizeBrandKey(sourceName) {
   return (sourceName || 'unknown').trim().toLowerCase();
 }
 
-// Claude's final text block is asked to end with a fenced JSON object; pull
+// The model is asked to end its response with a fenced JSON object; pull
 // the first well-formed {...} out of it rather than assuming the whole
-// block is pure JSON (tool-use responses often include prose around it).
+// response is pure JSON (grounded responses often include prose around it).
 function extractJson(text) {
   const match = /\{[\s\S]*\}/.exec(text);
   if (!match) return null;
@@ -79,14 +81,10 @@ sustainabilityRouter.post('/api/wardrobe/:id/sustainability', async (req, res) =
 });
 
 async function lookupSustainability(item, brandKey) {
-  const response = await anthropic.messages.create({
-    model: 'claude-opus-4-8',
-    max_tokens: 2048,
-    tools: [{ type: 'web_search_20260209', name: 'web_search' }],
-    messages: [
+  const text = await callGemini({
+    parts: [
       {
-        role: 'user',
-        content:
+        text:
           `Research the sustainability record of the brand/source "${item.sourceName || brandKey}" ` +
           `(a "${item.category}" clothing item). Look for: manufacturing origin/labor practices, ` +
           `known certifications (GOTS, Fair Trade, OEKO-TEX, B Corp, etc.), and any public controversies ` +
@@ -103,11 +101,10 @@ async function lookupSustainability(item, brandKey) {
           '```',
       },
     ],
+    tools: [{ google_search: {} }],
   });
 
-  const textBlocks = response.content.filter((b) => b.type === 'text');
-  const lastText = textBlocks[textBlocks.length - 1]?.text || '';
-  const parsed = extractJson(lastText);
+  const parsed = extractJson(text);
 
   if (!parsed || parsed.score === null || parsed.score === undefined) {
     const fallback = GENERIC_FALLBACK[item.category] || GENERIC_FALLBACK.other;
